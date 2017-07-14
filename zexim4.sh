@@ -1,5 +1,5 @@
 #!/bin/bash
- 
+
 # Egor Minko. Synchron LLC. May.2012
 #
 # /etc/zabbix/zabbix_agentd.conf
@@ -10,10 +10,10 @@
 # /etc/sudoers
 # zabbix ALL=NOPASSWD: /opt/zexim4
 #
- 
+
 zexim4ver="ver 2.1"
 rval=0
- 
+
 # MULTIPLE PARSERS PROTECTION
 LOCK=/tmp/zexim4.pid
 while [ -e "$LOCK" ]; do
@@ -23,9 +23,10 @@ do
 sleep 0.$[ ( $RANDOM % 10 ) + 1 ]s
 done
 done
-echo $$ &amp;amp;amp;amp;amp;gt; $LOCK
+echo $$ > $LOCK
 trap "rm -f $LOCK; exit" INT TERM EXIT
- 
+
+
 # USAGE
 function usage()
 {
@@ -48,24 +49,25 @@ echo " Packet = letter with many recipients"
 echo " Message = A single message for one recipient"
 echo ""
 }
- 
+
 # GLOBAL INSTRUCTIONS
 CACHETTL="58" # sec
 main_log=/var/log/exim4/mainlog
 tmp_log=/tmp/exim_log_pars.txt
 stats=/tmp/stats.txt
 exim=`which exim`
- 
+
+
 function create_data()
 {
 # CREATING STATS FILE
 if [ ! -e "$stats" ] ; then touch $stats ; fi
- 
+
 # CREATING TMP FILE
 # additional 'sub' in 'awk' used for cutting special chars that breaks next 'sed' parsing. For now: []()
 position=`tail -1 $stats |awk '{print $1" "$2" "$3}'`
 position_log=`tail -1 $main_log | awk '{sub(/\]/,""); sub(/\[/,""); sub(/\)/,""); sub(/\(/,""); print $1" "$2" "$3}'`
- 
+
 # BUILDING REPORT ONLY IF THERE IS DIFFERENCE BETWEEN LAST LINE IN LOG
 if [ "$position" == "$position_log" ]
 then
@@ -73,14 +75,14 @@ vars="0 0 0 0 0 0 0 0 0"
 else
 if ! grep -qc "" $stats || ! awk '{sub(/\]/,""); sub(/\[/,""); sub(/\)/,""); sub(/\(/,""); print}' $main_log|grep -qc "$position"
 then
-awk '{sub(/\]/,""); sub(/\[/,""); sub(/\)/,""); sub(/\(/,""); print}' $main_log $main_log &amp;amp;amp;amp;amp;gt; $tmp_log
+awk '{sub(/\]/,""); sub(/\[/,""); sub(/\)/,""); sub(/\(/,""); print}' $main_log $main_log > $tmp_log
 else
-awk '{sub(/\]/,""); sub(/\[/,""); sub(/\)/,""); sub(/\(/,""); print}' $main_log |sed 1,/"$position"/d | sed /"$position"/d &amp;amp;amp;amp;amp;gt; $tmp_log
+awk '{sub(/\]/,""); sub(/\[/,""); sub(/\)/,""); sub(/\(/,""); print}' $main_log |sed 1,/"$position"/d | sed /"$position"/d > $tmp_log
 fi
 vars="`awk '\
 BEGIN {deliver=0; arrive=0; error=0; local=0; complete=0; reject=0; badrelay=0; defer=0; unroute=0}\
-/[-=]&amp;amp;amp;amp;amp;gt;/ { deliver++ }\
-/&amp;amp;amp;amp;amp;lt;=/ {arrive++}\
+/[-=]>/ { deliver++ }\
+/<=/ {arrive++}\
 / \*\* / {error++}\
 /[=][=]/ {defer++}\
 /al_delivery/ {local++}\
@@ -90,14 +92,14 @@ BEGIN {deliver=0; arrive=0; error=0; local=0; complete=0; reject=0; badrelay=0; 
 /Unrouteable address/ {unroute++}\
 END {print deliver" "arrive" "error" "defer" "local" "complete" "reject" "badrelay" "unroute}' $tmp_log`"
 fi
- 
+
 queue_size="`$exim -bpc`"
 recipients="`exipick -bpu |awk '$2==""{print $1}'|grep -vE "^$"|wc -l`"
 frozen="`exiqgrep -zi|wc -l`"
-echo $position_log $vars $queue_size $recipients $frozen &amp;amp;amp;amp;amp;gt;&amp;amp;amp;amp;amp;gt; $stats
- 
+echo $position_log $vars $queue_size $recipients $frozen >> $stats
+
 }
- 
+
 function zabbix_answer()
 {
 case $CASE_VALUE in
@@ -149,13 +151,14 @@ trap - INT TERM EXIT
 exit $rval;;
 esac
 }
- 
+
 if [ -s "$stats" ]; then
 TIMECACHE=`stat -c"%Z" "$stats"`
 else
 TIMECACHE=0
 fi
- 
+
+
 TIMENOW=`date '+%s'`
 if [[ $# == 1 ]];then
 CASE_VALUE=$1
